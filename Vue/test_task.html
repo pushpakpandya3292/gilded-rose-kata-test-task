@@ -1,0 +1,163 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN" "http://www.w3.org/TR/html4/loose.dtd">
+<html>
+<head></head>
+<body>
+<section id="content">
+</section>
+<script src="https://cdn.jsdelivr.net/npm/vue@2.x"></script>
+<script>
+    new Vue({
+      data: () => ({ 
+        items: [
+            {name:'+5 Dexterity Vest',selling_value : -50, quality_value : 20},
+            {name:'Aged Brie',selling_value : -2,quality_value :  50},
+            {name:'Elixir of the Mongoose',selling_value : 5,quality_value :  7},
+            {name:'Backstage passes',selling_value : 9, quality_value : 20},
+            {name:'Sulfuras, Hand of Ragnaros', selling_value :-1, quality_value : 80},
+            {name:'Backstage passes to a TAFKAL80ETC concert',selling_value : 15, quality_value : 20},
+            {name:'Backstage passes to a TAFKAL80ETC concert',selling_value : 10, quality_value : 49},
+            {name:'Backstage passes to a TAFKAL80ETC concert',selling_value : 5, quality_value : 49},
+            {name:'Conjured Mana Cake',selling_value : 3, quality_value : 6}
+        ],
+        results:[] 
+      }),
+      methods:{
+        update_quality(item)
+        {
+
+           const name = item.name;
+           const selling_value = item.selling_value;
+           const quality_value = item.quality_value;
+           var has_error = false;
+           var error_message = [];
+           var result = {};
+           var updatedItemValue = {
+              name: name,
+              selling_value: selling_value,
+              quality_value: quality_value
+           }
+
+           if(!name || name == null || name == '')
+           {
+            has_error = true;
+            error_message.push("Please pass valid name of item and it should not be blank");
+           }
+
+           if(!selling_value || isNaN(selling_value) || selling_value == null || selling_value == '')
+           {
+            has_error = true;
+            error_message.push("Please pass valid value of selling and it should be in int");
+           }
+
+           if(!quality_value || isNaN(quality_value) || quality_value == null || quality_value == '')
+           {
+            has_error = true;
+            error_message.push("Please pass valid value of quality and it should be in int");
+           }
+
+           if(!isNaN(selling_value) && !has_error)
+           {
+              //Once the sell by date has passed, quality degrades twice as fast
+              if(selling_value < 0 && name != 'Sulfuras' && name != 'Backstage passes')
+              {
+                  if(name != 'Conjured')
+                  {
+                    let qty_dec_value = Math.abs(selling_value) * 2;
+                    updatedItemValue.quality_value = (quality_value - qty_dec_value) > 0 ? quality_value - qty_dec_value : 0;
+                  }
+                  else
+                  {
+                    //"Conjured" items degrade in quality twice as fast as normal items
+                    let qty_dec_value = Math.abs(selling_value) * 4;
+                    updatedItemValue.quality_value = (quality_value - qty_dec_value) > 0 ? quality_value - qty_dec_value : 0;
+                  }
+              }
+
+              //"Aged Brie" actually increases in quality the older it gets
+              if(name == 'Aged Brie')
+              {
+                let qty_dec_value = Math.abs(selling_value);
+                updatedItemValue.quality_value = (quality_value + qty_dec_value ) <= 50 ? quality_value + qty_dec_value : 50;
+              }
+
+              //"Backstage passes", like aged brie, increases in quality as its sell-in value approaches; 
+              //quality increases by 2 when there are 10 days or less and by 3 when there are 5 days or less but quality drops to 0 after the concert
+              if(name == 'Backstage passes')
+              {
+                if(selling_value <= 10 && selling_value > 5)
+                {
+                  updatedItemValue.quality_value = (quality_value + 2 ) <= 50 ? quality_value + 2 : 50;
+                }
+                else if(selling_value <= 5)
+                {
+                  updatedItemValue.quality_value = 0;
+                }
+              }
+
+              var result = {
+                statusCode : 201,
+                status:true,
+                data:updatedItemValue,
+                error:null
+              }
+           }
+           else
+           {
+              var result = {
+                statusCode : 401,
+                status:false,
+                data:null,
+                error:error_message
+              }
+           }
+           
+
+           this.results.push(result);
+            
+        },
+        get_all_items_results()
+        {
+          this.items.forEach(element => {
+            this.update_quality(element);
+          });
+        } 
+      },
+      beforeMount(){
+        this.get_all_items_results();
+        setTimeout(()=>{},1000)
+      },
+      template: `
+      <div>
+        <table border="1">
+          <tr>
+              <th> Index </th>
+              <th>  Input </th>
+              <th>  Result </th>
+            </tr>
+            <tr v-for="(item,index) in results" :key="index">
+              <td> {{ (index + 1) }} </td>
+              <td> <pre v-html="items[index]"></pre>  </td>
+              <td> <pre v-html="item"></pre> </td>
+            </tr>
+      </table>
+      </div>
+      `
+    }).$mount('#content');
+  </script>
+</body>
+<style>
+.result_box
+{
+  display: flex;
+}
+tr:nth-child(1) {  
+  width:30px;
+}
+tr:nth-child(2) {  
+  width:100px;
+}
+tr:nth-child(3) {  
+  width:100px;
+}
+</style>
+</html>
